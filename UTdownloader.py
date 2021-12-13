@@ -48,6 +48,6 @@ class DBManager:
 
 if __name__ == '__main__':
 
-    # My first commit
+    # develop branch
     downloader = UTdownloader()
     result = downloader.download_all_new()
