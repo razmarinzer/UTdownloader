@@ -1,5 +1,7 @@
+import urllib.request
+import json
 
-""" Cуть программы: Написать скрипт, который ищет новые видео на youtube на канале selfedu и загружает их в каталог
+"""Cуть программы: Написать скрипт, который ищет новые видео на youtube на канале selfedu и загружает их в каталог
 на локальный компьютер. Новые видео - те, которые еще не были загружены при предыдущих запусках скрипта. Предусмотреть
  запуск скрипта по расписанию. Предусмотреть запись ошибок в текстовый файл или базу данных. Предусмотреть
  дополнительный метод для очистки списка уже загруженных файлов. Хранить список загруженных видео в текстовом
@@ -28,7 +30,15 @@ class UTdownloader:
 
 
 class Parser:
-    print(10)
+
+    def get_all_video_from_channel(channel_id):
+        pass
+
+    def get_all_video_with_titles_from_channel(channel_id):
+        pass
+
+    def get_information_from_youtube_video(video_id):
+        pass
 
 class DBManager:
 
