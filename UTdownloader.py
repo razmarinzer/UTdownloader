@@ -28,8 +28,7 @@ class UTdownloader:
 
 
 class Parser:
-    
-    pass
+    print(10)
 
 class DBManager:
 
