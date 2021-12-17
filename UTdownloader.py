@@ -15,16 +15,21 @@ class UTdownloader:
 
     def __init__(self):
         self.db_controller = DBManager()
+        self.parser = Parser()
 
     def download_all_new(self):
         new_video_refs = self.get_new_video_refs()
         for video_ref in new_video_refs:
             self.download_video_from_ref(video_ref)
 
+        return new_video_refs
+
     def get_new_video_refs(self):
         old_video_refs = self.db_controller.get_old_video_refs()
+        all_video_refs = self.parser.get_all_video_refs()
 
-        return []
+        new_video_refs = [element for element in all_video_refs if element not in old_video_refs]
+        return new_video_refs
 
     def download_video_from_ref(self, video_ref):
         pass
@@ -32,9 +37,12 @@ class UTdownloader:
 
 class Parser:
 
-    def scrape_videos(url):
+    def __init__(self, url=''):
+        self.url = url or 'https://www.youtube.com/c/selfedu_rus/videos'
 
-        req = requests.get(url)
+    def get_all_video_refs(self):
+
+        req = requests.get(self.url)
         send = BeautifulSoup(req.text, "html.parser")
         search = send.find_all("script")
         key = '"videoId":'
@@ -42,32 +50,15 @@ class Parser:
 
         return data
 
-    def scrape_lists(url):
-
-        req = requests.get(url)
-        send = BeautifulSoup(req.text, "html.parser")
-        search = send.find_all("script")
-        key = '"playlistID":"'
-        data = re.findall(key + r"([^*]{34})", str(search))
-
-        return data
-
-    if __name__ == "__main__":
-        url = "https://www.youtube.com/c/selfedu_rus/playlists"
-        data = scrape_lists(url)
-        data = data[::3]
-        data = data[:-2]
-
-        for element in data:
-            output = 'https://www.youtube.com/playlist?list-' + element
-            vid = scrape_videos(output)
-            vid = vid[::3]
-            vid = vid[:-1]
-
-            for element in vid:
-                with open("E:/Python/Projects/Parse/parse.txt", "a", encoding="utf-8") as files:
-                    files.write(str('https://www.youtube.com/watch?v=' + element + '\n'))
-                    print('https://www.youtube.com/watch?v=' + element)
+    # def scrape_lists(self, url):
+    #
+    #     req = requests.get(url)
+    #     send = BeautifulSoup(req.text, "html.parser")
+    #     search = send.find_all("script")
+    #     key = '"playlistID":"'
+    #     data = re.findall(key + r"([^*]{34})", str(search))
+    #
+    #     return data
 
 
 class DBManager:
@@ -77,7 +68,24 @@ class DBManager:
 
 
 if __name__ == '__main__':
-
-    # My first commit
     downloader = UTdownloader()
     result = downloader.download_all_new()
+
+    print(result)
+
+    # url = "https://www.youtube.com/c/selfedu_rus/playlists"
+    # data = scrape_lists(url)
+    # data = data[::3]
+    # data = data[:-2]
+    #
+    # for element in data:
+    #     output = 'https://www.youtube.com/playlist?list-' + element
+    #     vid = scrape_videos(output)
+    #     vid = vid[::3]
+    #     vid = vid[:-1]
+    #
+    #     for element in vid:
+    #         with open("E:/Python/Projects/Parse/parse.txt", "a", encoding="utf-8") as files:
+    #             files.write(str('https://www.youtube.com/watch?v=' + element + '\n'))
+    #             print('https://www.youtube.com/watch?v=' + element)
+
