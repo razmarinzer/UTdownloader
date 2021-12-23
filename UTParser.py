@@ -1,41 +1,27 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup as bs
 import requests
-import re
 
-def scrape_videos(url):
-
-    req = requests.get(url)
-    send = BeautifulSoup(req.text, "html.parser")
-    search = send.find_all("script")
-    key = '"videoId":'
-    data = re.findall(key + r"([^*]{11})", str(search))
-
-    return data
+main_link = 'https://www.youtube.com/'
+response = requests.get(main_link + '/c/selfedu_rus/videos')
+html = bs(response.text, 'lxml')
 
 
-def scrape_lists(url):
+video_block = html.find_all()
+print(video_block[0].html)
 
-    req = requests.get(url)
-    send = BeautifulSoup(req.text, "html.parser")
-    search = send.find_all("script")
-    key = '"playlistID":"'
-    data = re.findall(key + r"([^*]{34})", str(search))
 
-    return data
+# response = requests.get('https://www.youtube.com/c/selfedu_rus/videos/').text
+# html = bs(response, 'lxml')
+#
+# a = html.find(text='href="/watch?v=7WVYqjdMa6U"')
+# print(a)
 
-if  __name__ == "__main__":
-    url = "https://www.youtube.com/c/selfedu_rus/playlists"
-    data = scrape_lists(url)
-    data = data[::3]
-    data = data[:-2]
+# elem = html.find_all(attrs={'"href="'})
+# print(elem)
 
-    for element in data:
-        output = 'https://www.youtube.com/playlist?list=' + element
-        vid = scrape_videos(output)
-        vid = vid[::3]
-        vid = vid[:-1]
+# children_a = a.findChildren()
+# print(children_a)
 
-        for element in vid:
-            with open("E:/Python/Projects/Parse/parse.txt", "a", encoding="utf-8") as files:
-                files.write(str('https://www.youtube.com/watch?v=' + element + '\n'))
-                print('https://www.youtube.com/watch?v=' + element)
+# for link in html.find_all('a'):
+#     print(link.get('href'))
+

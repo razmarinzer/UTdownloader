@@ -47,6 +47,7 @@ class Parser:
         search = send.find_all("script")
         key = '"videoId":'
         data = re.findall(key + r"([^*]{11})", str(search))
+        # print(data)
 
         return data
 
