@@ -1,13 +1,42 @@
 from bs4 import BeautifulSoup as bs
 import requests
+import re
 
 main_link = 'https://www.youtube.com/'
 response = requests.get(main_link + '/c/selfedu_rus/videos')
-html = bs(response.text, 'lxml')
+html = bs(response.text, 'html.parser')
+
+video_blocks = html.find_all('script')
+
+scripts_string = str(video_blocks)
+
+# print(scripts_string)
+position = -1
+first = True
+
+refs = []
+
+while first or position != -1:
+    position = scripts_string.find('videoId":"', position+1)
+
+    c_ref = scripts_string[position+10:position+21]
+    if position != -1 and c_ref not in refs:
+        refs.append(c_ref)
+    first = False
 
 
-video_block = html.find_all()
-print(video_block[0].html)
+#
+# key = '"videoId":'
+# data = re.findall(key + r"([^*]{11})", scripts_string)
+#
+# print(data)
+
+print(len(refs))
+
+for ref in refs:
+    print('https://www.youtube.com/watch?v=' + ref)
+
+
 
 
 # response = requests.get('https://www.youtube.com/c/selfedu_rus/videos/').text
