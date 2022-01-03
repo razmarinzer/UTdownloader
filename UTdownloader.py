@@ -1,6 +1,10 @@
-from bs4 import BeautifulSoup
-import requests
-import re
+from lxml import html
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+import time
+
 
 """Cуть программы: Написать скрипт, который ищет новые видео на youtube на канале selfedu и загружает их в каталог
 на локальный компьютер. Новые видео - те, которые еще не были загружены при предыдущих запусках скрипта. Предусмотреть
@@ -37,29 +41,46 @@ class UTdownloader:
 
 class Parser:
 
-    def __init__(self, url=''):
-        self.url = url or 'https://www.youtube.com/c/selfedu_rus/videos'
-
     def get_all_video_refs(self):
 
-        req = requests.get(self.url)
-        send = BeautifulSoup(req.text, "html.parser")
-        search = send.find_all("script")
-        key = '"videoId":'
-        data = re.findall(key + r"([^*]{11})", str(search))
-        # print(data)
+        SCROLL_PAUSE_TIME = 3
 
-        return data
+        options = Options()
+        options.add_argument('--headless')
 
-    # def scrape_lists(self, url):
-    #
-    #     req = requests.get(url)
-    #     send = BeautifulSoup(req.text, "html.parser")
-    #     search = send.find_all("script")
-    #     key = '"playlistID":"'
-    #     data = re.findall(key + r"([^*]{34})", str(search))
-    #
-    #     return data
+        driver = webdriver.Chrome(options=options)
+
+        main_link = 'https://www.youtube.com/'
+        driver.get(main_link + '/c/selfedu_rus/videos')
+
+        last_height = driver.execute_script("return document.documentElement.scrollHeight")
+        print('Current height - {}'.format(last_height))
+        while True:
+            # Scroll down to bottom
+            driver.execute_script("window.scrollTo(0,document.documentElement.scrollHeight);")
+
+            # Wait to load page
+            time.sleep(SCROLL_PAUSE_TIME)
+
+            # Calculate new scroll height and compare with last scroll height
+            new_height = driver.execute_script("return document.documentElement.scrollHeight")
+            print('Current height - {}'.format(new_height))
+            if new_height == last_height:
+                print("Thats enough")
+                break
+            last_height = new_height
+
+        html_text = driver.page_source
+
+        driver.close()
+
+        root = html.fromstring(html_text)
+
+        elements = root.xpath("//h3[@class='style-scope ytd-grid-video-renderer']/a/@href")
+
+        elements = [main_link + el for el in elements]
+
+        return elements
 
 
 class DBManager:
@@ -74,19 +95,5 @@ if __name__ == '__main__':
 
     print(result)
 
-    # url = "https://www.youtube.com/c/selfedu_rus/playlists"
-    # data = scrape_lists(url)
-    # data = data[::3]
-    # data = data[:-2]
-    #
-    # for element in data:
-    #     output = 'https://www.youtube.com/playlist?list-' + element
-    #     vid = scrape_videos(output)
-    #     vid = vid[::3]
-    #     vid = vid[:-1]
-    #
-    #     for element in vid:
-    #         with open("E:/Python/Projects/Parse/parse.txt", "a", encoding="utf-8") as files:
-    #             files.write(str('https://www.youtube.com/watch?v=' + element + '\n'))
-    #             print('https://www.youtube.com/watch?v=' + element)
+
 
