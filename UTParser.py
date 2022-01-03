@@ -1,56 +1,48 @@
-from bs4 import BeautifulSoup as bs
-import requests
-import re
+
+from lxml import html
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+import time
+
+SCROLL_PAUSE_TIME = 3
+
+options = Options()
+options.add_argument('--headless')
+
+driver = webdriver.Chrome(options=options)
 
 main_link = 'https://www.youtube.com/'
-response = requests.get(main_link + '/c/selfedu_rus/videos')
-html = bs(response.text, 'html.parser')
+driver.get(main_link + '/c/selfedu_rus/videos')
 
-video_blocks = html.find_all('script')
+last_height = driver.execute_script("return document.documentElement.scrollHeight")
+print('Current height - {}'.format(last_height))
+while True:
+    # Scroll down to bottom
+    driver.execute_script("window.scrollTo(0,document.documentElement.scrollHeight);")
 
-scripts_string = str(video_blocks)
+    # Wait to load page
+    time.sleep(SCROLL_PAUSE_TIME)
 
-# print(scripts_string)
-position = -1
-first = True
+    # Calculate new scroll height and compare with last scroll height
+    new_height = driver.execute_script("return document.documentElement.scrollHeight")
+    print('Current height - {}'.format(new_height))
+    if new_height == last_height:
+        print("Thats enough")
+        break
+    last_height = new_height
 
-refs = []
+html_text = driver.page_source
 
-while first or position != -1:
-    position = scripts_string.find('videoId":"', position+1)
+driver.close()
 
-    c_ref = scripts_string[position+10:position+21]
-    if position != -1 and c_ref not in refs:
-        refs.append(c_ref)
-    first = False
+root = html.fromstring(html_text)
 
+elements = root.xpath("//h3[@class='style-scope ytd-grid-video-renderer']/a/@href")
 
-#
-# key = '"videoId":'
-# data = re.findall(key + r"([^*]{11})", scripts_string)
-#
-# print(data)
+elements = [main_link + el for el in elements]
 
-print(len(refs))
+print(elements)
 
-for ref in refs:
-    print('https://www.youtube.com/watch?v=' + ref)
-
-
-
-
-# response = requests.get('https://www.youtube.com/c/selfedu_rus/videos/').text
-# html = bs(response, 'lxml')
-#
-# a = html.find(text='href="/watch?v=7WVYqjdMa6U"')
-# print(a)
-
-# elem = html.find_all(attrs={'"href="'})
-# print(elem)
-
-# children_a = a.findChildren()
-# print(children_a)
-
-# for link in html.find_all('a'):
-#     print(link.get('href'))
 

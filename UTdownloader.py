@@ -5,7 +5,6 @@ from selenium.webdriver.chrome.options import Options
 
 import time
 
-
 """Cуть программы: Написать скрипт, который ищет новые видео на youtube на канале selfedu и загружает их в каталог
 на локальный компьютер. Новые видео - те, которые еще не были загружены при предыдущих запусках скрипта. Предусмотреть
  запуск скрипта по расписанию. Предусмотреть запись ошибок в текстовый файл или базу данных. Предусмотреть
@@ -19,7 +18,7 @@ class UTdownloader:
 
     def __init__(self):
         self.db_controller = DBManager()
-        self.parser = Parser()
+        self.parser = Parser('selfedu_rus')
 
     def download_all_new(self):
         new_video_refs = self.get_new_video_refs()
@@ -40,18 +39,34 @@ class UTdownloader:
 
 
 class Parser:
+    pass
+
+    def __init__(self, channel, scroll_pause_time=0):
+        self.channel = channel
+        self._main_link = 'https://www.youtube.com/'
+        self._scroll_pause_time = scroll_pause_time or 3
 
     def get_all_video_refs(self):
 
-        SCROLL_PAUSE_TIME = 3
+        html_text = self._get_html_text()
+
+        root = html.fromstring(html_text)
+
+        elements = root.xpath("//h3[@class='style-scope ytd-grid-video-renderer']/a/@href")
+
+        elements = [self._main_link + el for el in elements]
+
+        return elements
+
+    def _get_html_text(self):
+        pass
 
         options = Options()
         options.add_argument('--headless')
 
         driver = webdriver.Chrome(options=options)
 
-        main_link = 'https://www.youtube.com/'
-        driver.get(main_link + '/c/selfedu_rus/videos')
+        driver.get('{}/c/{}/videos'.format(self._main_link, self.channel))
 
         last_height = driver.execute_script("return document.documentElement.scrollHeight")
         print('Current height - {}'.format(last_height))
@@ -60,7 +75,7 @@ class Parser:
             driver.execute_script("window.scrollTo(0,document.documentElement.scrollHeight);")
 
             # Wait to load page
-            time.sleep(SCROLL_PAUSE_TIME)
+            time.sleep(self._scroll_pause_time)
 
             # Calculate new scroll height and compare with last scroll height
             new_height = driver.execute_script("return document.documentElement.scrollHeight")
@@ -74,13 +89,7 @@ class Parser:
 
         driver.close()
 
-        root = html.fromstring(html_text)
-
-        elements = root.xpath("//h3[@class='style-scope ytd-grid-video-renderer']/a/@href")
-
-        elements = [main_link + el for el in elements]
-
-        return elements
+        return html_text
 
 
 class DBManager:
