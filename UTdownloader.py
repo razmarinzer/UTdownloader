@@ -2,8 +2,12 @@ from lxml import html
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+import os
 
 import time
+
+import pytube
+import moviepy.editor as mpe
 
 """Cуть программы: Написать скрипт, который ищет новые видео на youtube на канале selfedu и загружает их в каталог
 на локальный компьютер. Новые видео - те, которые еще не были загружены при предыдущих запусках скрипта. Предусмотреть
@@ -14,16 +18,17 @@ import time
    - загружает видео, отмеченные в списке для загрузки."""
 
 
-class UTdownloader:
+class UTDownloader:
 
     def __init__(self):
         self.db_controller = DBManager()
         self.parser = Parser('selfedu_rus')
+        self.downloader = Downloader()
 
     def download_all_new(self):
         new_video_refs = self.get_new_video_refs()
         for video_ref in new_video_refs:
-            self.download_video_from_ref(video_ref)
+            self.downloader.download_video(video_ref)
 
         return new_video_refs
 
@@ -32,14 +37,12 @@ class UTdownloader:
         all_video_refs = self.parser.get_all_video_refs()
 
         new_video_refs = [element for element in all_video_refs if element not in old_video_refs]
-        return new_video_refs
 
-    def download_video_from_ref(self, video_ref):
-        pass
+        new_video_refs = ['https://www.youtube.com/watch?v=bN1xpI6f3Vo']
+        return new_video_refs
 
 
 class Parser:
-    pass
 
     def __init__(self, channel, scroll_pause_time=0):
         self.channel = channel
@@ -98,8 +101,93 @@ class DBManager:
         return []
 
 
+class Downloader:
+
+    def __init__(self, folder=''):
+        self.folder = folder or 'Youtube_videos'
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
+
+        self.title = ''
+
+    def download_video(self, ref, with_higest_res=False, merge_with_audio=False):
+
+        you_video = pytube.YouTube(ref)
+
+        video_streams = you_video.streams.filter(subtype="mp4")
+
+        if not with_higest_res:
+            video_streams.filter(progressive=True)
+
+        video_streams.order_by('resolution').desc()
+
+        if not video_streams:
+            raise IndexError('Video streams is empty')
+
+        video_stream = video_streams[0]
+
+        audio_stream = None
+
+        if not video_stream.is_progressive:
+            audio_streams = you_video.streams.filter(only_audio=True).order_by('abr').desc()
+
+            if not audio_streams:
+                raise IndexError('Audio streams is empty')
+
+            audio_stream = audio_streams[0]
+
+        filename = you_video.video_id + ' - ' + you_video.title
+
+        if not video_stream.is_progressive:
+            video_stream.download(output_path=self.folder, filename=filename + '.mp4')
+        else:
+            video_stream.download(output_path=self.folder, filename=filename + ' - video.mp4')
+            audio_stream.download(output_path=self.folder, filename=filename + ' - audio.webm')
+
+            if merge_with_audio:
+                self.merge_video_audio(you_video.video_id)
+
+    def merge_video_audio(self, video_id):
+
+        file_list = os.listdir(self.folder)
+
+        file_list = [file_name for file_name in file_list if self._get_video_id_from_filename(file_name) == video_id]
+
+        filename_video = ''
+        filename_audio = ''
+        final_filename = ''
+        for filename in file_list:
+            namelist = filename.split(' - ')
+            if len(namelist) == 3:
+                if namelist[2] == 'video.mp4':
+                    filename_video = filename
+                    final_filename = namelist[0] + namelist[1] + '.mp4'
+                elif namelist[2] == 'audio.webm':
+                    filename_audio = filename
+
+        if not filename_video:
+            raise FileNotFoundError('Video file not found')
+
+        if not filename_audio:
+            raise FileNotFoundError('Audio file not found')
+
+        my_clip = mpe.VideoFileClip(filename_video)
+        final_audio = mpe.AudioFileClip(filename_audio)
+
+        final_clip = my_clip.set_audio(final_audio)
+        final_clip.write_videofile(final_filename)
+
+    @staticmethod
+    def _get_resolution_value(resolution_string):
+        return int("".join(filter(str.isdigit, resolution_string)))
+
+    @staticmethod
+    def _get_video_id_from_filename(filename):
+        namelist = filename.split(' - ')
+        return namelist[0]
+
 if __name__ == '__main__':
-    downloader = UTdownloader()
+    downloader = UTDownloader()
     result = downloader.download_all_new()
 
     print(result)
